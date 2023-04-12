@@ -2,8 +2,16 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "./lib/supabase";
 
 const createUserFormSchema = z.object({
+  avatar: z
+    .instanceof(FileList)
+    .transform((list) => list.item(0)!)
+    .refine(
+      (file) => file!.size <= 5 * 1024 * 1024,
+      "The file needs to be max 5 Mb"
+    ),
   name: z
     .string()
     .nonempty("This field is required")
@@ -55,7 +63,11 @@ export default function App() {
     name: "techs",
   });
 
-  function createUser(data: CreateUserFormData) {
+  async function createUser(data: CreateUserFormData) {
+    await supabase.storage
+      .from("forms-react")
+      .upload(data.avatar?.name, data.avatar);
+    console.log(data.avatar);
     setOutput(JSON.stringify(data, null, 2));
   }
 
@@ -70,13 +82,25 @@ export default function App() {
         className="flex flex-col gap-4 w-full max-w-md"
       >
         <div className="flex flex-col gap-1">
+          <label htmlFor="">Avatar</label>
+          <input {...register("avatar")} type="file" />
+          {errors.avatar && (
+            <span className="text-red-500 text-sm">
+              {errors.avatar?.message}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
           <label htmlFor="">Name</label>
           <input
             {...register("name")}
             type="text"
             className="border border-zinc-200 shadow-sm rounded h-10 px-3 text-zinc-700"
           />
-          {errors.email && <span className="text-red-500 text-sm">{errors.name?.message}</span>}
+          {errors.email && (
+            <span className="text-red-500 text-sm">{errors.name?.message}</span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -86,7 +110,11 @@ export default function App() {
             type="email"
             className="border border-zinc-200 shadow-sm rounded h-10 px-3 text-zinc-700"
           />
-          {errors.email && <span className="text-red-500 text-sm">{errors.email?.message}</span>}
+          {errors.email && (
+            <span className="text-red-500 text-sm">
+              {errors.email?.message}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -96,7 +124,11 @@ export default function App() {
             type="password"
             className="border border-zinc-200 shadow-sm rounded h-10 px-3 text-zinc-700"
           />
-          {errors.email && <span className="text-red-500 text-sm">{errors.password?.message}</span>}
+          {errors.email && (
+            <span className="text-red-500 text-sm">
+              {errors.password?.message}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -122,7 +154,9 @@ export default function App() {
                   />
 
                   {errors.techs?.[index]?.title && (
-                    <span className="text-red-500 text-sm">{errors.email?.message}</span>
+                    <span className="text-red-500 text-sm">
+                      {errors.email?.message}
+                    </span>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
@@ -133,14 +167,18 @@ export default function App() {
                   />
 
                   {errors.techs?.[index]?.knowledge && (
-                    <span className="text-red-500 text-sm">{errors.techs?.[index]?.knowledge?.message}</span>
+                    <span className="text-red-500 text-sm">
+                      {errors.techs?.[index]?.knowledge?.message}
+                    </span>
                   )}
                 </div>
               </div>
             );
           })}
 
-          {errors.techs && <span className="text-red-500 text-sm">{errors.techs.message}</span>}
+          {errors.techs && (
+            <span className="text-red-500 text-sm">{errors.techs.message}</span>
+          )}
         </div>
 
         <button
